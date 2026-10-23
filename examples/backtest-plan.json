@@ -1,0 +1,35 @@
+{
+  "strategy": "ValueAreaReclaim",
+  "configName": "v1",
+  "grid": "backtest-grid.json",
+  "connector": "bybit",
+  "universe": "crypto",
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "sourceInterval": "15",
+  "executionInterval": "15",
+  "start": "2026-09-23T00:00:00.000Z",
+  "endExclusive": "2026-10-23T00:00:00.000Z",
+  "startTime": 1790121600000,
+  "endTime": 1792713600000,
+  "requiredWarmupStart": "2026-09-19T00:00:00.000Z",
+  "cacheOnly": true,
+  "fast": true,
+  "parallel": 1,
+  "executionCosts": {
+    "fees": { "makerRate": 0.0006, "takerRate": 0.0006 },
+    "slippage": {
+      "baseBps": 2,
+      "spreadMultiplier": 0,
+      "marketImpactBps": 0,
+      "delayRiskMultiplier": 0
+    },
+    "funding": { "enabled": false }
+  },
+  "status": "prepared-not-run",
+  "prerequisites": [
+    "Register the verified package in an explicitly authorized Project composition change.",
+    "Import the singleton grid as ValueAreaReclaim:v1.",
+    "Freeze source/framework/Project Git SHAs and config checksums.",
+    "Verify cached 15m coverage and the actual warmup prefix."
+  ]
+}
