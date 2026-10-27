@@ -3,6 +3,12 @@ import type { StrategyConfig } from "@tradejs/types";
 
 export const STRATEGY_NAME = "ValueAreaReclaim";
 
+export type EntryMode =
+  | "legacy"
+  | "accepted-return"
+  | "rsi-double-trap"
+  | "prior-day-trap";
+
 export interface ValueAreaReclaimConfig extends StrategyConfig {
   INTERVAL: "15" | "60";
   VAR_PROFILE_DAYS: number;
@@ -14,6 +20,16 @@ export interface ValueAreaReclaimConfig extends StrategyConfig {
   VAR_MIN_RR: number;
   VAR_COOLDOWN_BARS: number;
   VAR_MAX_ENTRIES_PER_SIDE: number;
+  VAR_ENTRY_MODE: EntryMode;
+  VAR_ENTRY_MODE_LONG: EntryMode | "inherit";
+  VAR_ENTRY_MODE_SHORT: EntryMode | "inherit";
+  VAR_REQUIRE_VALUE_MIGRATION: boolean;
+  VAR_REQUIRE_VALUE_MIGRATION_LONG: boolean;
+  VAR_REQUIRE_VALUE_MIGRATION_SHORT: boolean;
+  /** Rejected research paths are unavailable in this source checkpoint. */
+  VAR_REQUIRE_BALANCED_VALUE: boolean;
+  VAR_EXIT_ON_VALUE_LOSS: boolean;
+  VAR_PROTECT_PROGRESS: boolean;
   VAR_LONG: boolean;
   VAR_SHORT: boolean;
   MAX_LOSS_VALUE: number;
@@ -30,6 +46,15 @@ export const defaultConfig: ValueAreaReclaimConfig = {
   VAR_MIN_RR: 1.5,
   VAR_COOLDOWN_BARS: 8,
   VAR_MAX_ENTRIES_PER_SIDE: 1,
+  VAR_ENTRY_MODE: "legacy",
+  VAR_ENTRY_MODE_LONG: "inherit",
+  VAR_ENTRY_MODE_SHORT: "inherit",
+  VAR_REQUIRE_VALUE_MIGRATION: false,
+  VAR_REQUIRE_VALUE_MIGRATION_LONG: false,
+  VAR_REQUIRE_VALUE_MIGRATION_SHORT: false,
+  VAR_REQUIRE_BALANCED_VALUE: false,
+  VAR_EXIT_ON_VALUE_LOSS: false,
+  VAR_PROTECT_PROGRESS: false,
   VAR_LONG: true,
   VAR_SHORT: true,
   MAX_LOSS_VALUE: 10,
@@ -48,6 +73,27 @@ export function parseConfig(input: unknown): ValueAreaReclaimConfig {
   if (!["15", "60"].includes(config.INTERVAL)) {
     throw new Error("ValueAreaReclaim.INTERVAL must be 15 or 60");
   }
+  const modes = [
+    "legacy",
+    "accepted-return",
+    "rsi-double-trap",
+    "prior-day-trap",
+  ];
+  if (!modes.includes(config.VAR_ENTRY_MODE))
+    throw new Error("Invalid VAR_ENTRY_MODE");
+  for (const key of ["VAR_ENTRY_MODE_LONG", "VAR_ENTRY_MODE_SHORT"] as const)
+    if (!["inherit", ...modes].includes(config[key]))
+      throw new Error(`Invalid ${key}`);
+  for (const key of [
+    "VAR_REQUIRE_BALANCED_VALUE",
+    "VAR_EXIT_ON_VALUE_LOSS",
+    "VAR_PROTECT_PROGRESS",
+    "VAR_REQUIRE_VALUE_MIGRATION",
+    "VAR_REQUIRE_VALUE_MIGRATION_LONG",
+    "VAR_REQUIRE_VALUE_MIGRATION_SHORT",
+  ] as const)
+    if (config[key])
+      throw new Error(`${key} is unavailable in this research checkpoint`);
   const bounds = {
     VAR_PROFILE_DAYS: [2, 14],
     VAR_ATR_PERIOD: [2, 96],
@@ -99,3 +145,17 @@ export function parseConfig(input: unknown): ValueAreaReclaimConfig {
 
 export const configKey = (config: ValueAreaReclaimConfig) =>
   JSON.stringify(Object.entries(config).sort(([a], [b]) => a.localeCompare(b)));
+
+export const entryModeFor = (
+  config: ValueAreaReclaimConfig,
+  direction: "LONG" | "SHORT",
+): EntryMode => {
+  const side =
+    direction === "LONG"
+      ? config.VAR_ENTRY_MODE_LONG
+      : config.VAR_ENTRY_MODE_SHORT;
+  return side === "inherit" ? config.VAR_ENTRY_MODE : side;
+};
+export const needsPreviousDayRange = (config: ValueAreaReclaimConfig) =>
+  entryModeFor(config, "LONG") === "prior-day-trap" ||
+  entryModeFor(config, "SHORT") === "prior-day-trap";

@@ -47,6 +47,8 @@ test("1h entries on both sides use exactly the same 15m profile as 15m execution
     const b = await hour.next(row);
     assert.equal(b.kind, "entry");
     assert.equal(b.entryContext.interval, "60");
+    assert.equal(b.signal.figures.lines[0].points.at(-1).timestamp, END + HOUR);
+    assert.equal(a.signal.figures.lines[0].points.at(-1).timestamp, END + STEP);
     assert.deepEqual(
       b.signal.indicators.valueAreaReclaim.profile,
       a.signal.indicators.valueAreaReclaim.profile,
@@ -54,12 +56,10 @@ test("1h entries on both sides use exactly the same 15m profile as 15m execution
     assert.equal(b.orderPlan.takeProfits[0].price, 124.5);
     assert.equal(hour.reads.length, 1);
     assert.deepEqual(hour.reads[0], {
-      symbol: "BTCUSDT",
       interval: "15",
       start: END - 2 * DAY,
-      end: END - 1,
-      cacheOnly: true,
-      silent: true,
+      end: END,
+      limit: 192,
     });
     assert.equal(state(hour).engine.candles.length, 0);
   }
@@ -113,7 +113,7 @@ test("aggregating source data to hours would change the profile; actual 1h engin
   );
   assert.deepEqual(correct, buildValueAreaProfile(history(), END, 2, 0.9));
 });
-test("1h source access is causal in BACKTEST, PARITY and CRON", async () => {
+test("1h strategy requests a causal half-open source window in each execution mode", async () => {
   const outputs = [];
   for (const env of ["BACKTEST", "PARITY", "CRON"]) {
     const h = await harness(
@@ -129,7 +129,7 @@ test("1h source access is causal in BACKTEST, PARITY and CRON", async () => {
     const r = await h.next(longBar(END));
     assert.equal(r.kind, "entry");
     assert.equal(r.signal.indicators.valueAreaReclaim.profile.high, 148);
-    assert.equal(h.reads[0].cacheOnly, env !== "CRON");
+    assert.equal(h.reads[0].end, END);
     outputs.push(r.orderPlan);
   }
   assert.deepEqual(outputs[0], outputs[1]);
@@ -147,7 +147,7 @@ test("1h reads once per UTC day and preserves frozen profile within the day", as
   await h.next(bar(END + DAY));
   assert.equal(h.reads.length, 2);
   assert.equal(h.reads[1].start, END - DAY);
-  assert.equal(h.reads[1].end, END + DAY - 1);
+  assert.equal(h.reads[1].end, END + DAY);
 });
 test("1h incomplete history blocks entries for the day and does not substitute hourly candles", async () => {
   const source = history().slice(1);

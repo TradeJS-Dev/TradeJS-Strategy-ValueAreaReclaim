@@ -5,6 +5,7 @@ import type {
 } from "@tradejs/types";
 import {
   configKey,
+  needsPreviousDayRange,
   parseConfig,
   type ValueAreaReclaimConfig,
 } from "./config.js";
@@ -14,9 +15,12 @@ import {
   type EngineState,
   executionIntervalMs,
 } from "./engine.js";
+import type { ClosedCandlesCapability } from "./history.js";
 import { buildFigures } from "./figures.js";
 import {
   buildValueAreaProfile,
+  buildPreviousDayRange,
+  type PreviousDayRange,
   UTC_DAY_MS,
   utcDayStart,
   type ValueAreaProfile,
@@ -44,6 +48,8 @@ export const createValueAreaReclaimCore: CreateStrategyCore<
   }
   const config = parseConfig(strategyConfig);
   const step = executionIntervalMs(config);
+  const historyApi = strategyApi as typeof strategyApi &
+    Partial<ClosedCandlesCapability>;
   const controller = strategyApi.createStateController<CoreState>(
     "ValueAreaReclaim/v1",
     () => ({
@@ -74,12 +80,15 @@ export const createValueAreaReclaimCore: CreateStrategyCore<
     state.processedTimestamp = timestamp;
     const day = utcDayStart(candle.timestamp);
     let sourceProfile: ValueAreaProfile | null | undefined;
+    let sourceRange: PreviousDayRange | null | undefined;
     if (config.INTERVAL === "60" && state.engine.profileDay !== day) {
       // One bounded source read per UTC day. Empty/failed windows block entries,
       // while existing positions still receive their holding-time exit.
       state.profileReadCode = null;
       try {
-        const source = await strategyApi.getClosedCandles({
+        if (typeof historyApi.getClosedCandles !== "function")
+          throw new Error("Host lacks closed 15m capability");
+        const source = await historyApi.getClosedCandles({
           interval: "15",
           start: day - config.VAR_PROFILE_DAYS * UTC_DAY_MS,
           end: day,
@@ -93,6 +102,10 @@ export const createValueAreaReclaimCore: CreateStrategyCore<
               config.VAR_VALUE_FRACTION,
             )
           : null;
+        if (needsPreviousDayRange(config))
+          sourceRange = source.complete
+            ? buildPreviousDayRange(source.candles, day)
+            : null;
         if (!source.complete)
           state.profileReadCode = "VAR_15M_HISTORY_INCOMPLETE";
       } catch {
@@ -119,17 +132,27 @@ export const createValueAreaReclaimCore: CreateStrategyCore<
               ? sourceProfile
               : null
             : undefined,
+          config.INTERVAL === "60" && utcDayStart(row.timestamp) === day
+            ? sourceRange
+            : null,
         );
       state.seeded = true;
     }
-    const result = advanceEngine(state.engine, config, candle, sourceProfile);
+    const result = advanceEngine(
+      state.engine,
+      config,
+      candle,
+      sourceProfile,
+      sourceRange,
+    );
     if (state.budgetDay !== day) {
       state.budgetDay = day;
       state.entries = { LONG: 0, SHORT: 0 };
     }
     const position = await strategyApi.getCurrentPosition();
     if (position && position.qty > 0) {
-      state.engine.pending = null;
+      if (state.engine.pending?.mode !== "rsi-double-trap")
+        state.engine.pending = null;
       if (!state.holding || state.holding.direction !== position.direction) {
         // Position has no opening timestamp in StrategyAPI: close an unbound position conservatively.
         return strategyApi.exit({
@@ -182,14 +205,33 @@ export const createValueAreaReclaimCore: CreateStrategyCore<
     )
       return strategyApi.skip("VAR_MIN_RR");
     // Count accepted entry decisions, including orders later rejected by host policy.
+    const setupId = `var:${profile.start}:${profile.end}:${direction}:${candidate.excursionStart}`;
     const decision = await strategyApi.entry({
       code: "VAR_RECLAIM_ENTRY",
       direction,
       signalId: `var-${profile.end}-${direction}-${timestamp}`,
-      figures: buildFigures(candidate, currentPrice, stop),
+      figures: buildFigures(candidate, currentPrice, stop, step),
+      additionalIndicators: { setupId },
       indicators: {
+        setupId,
         valueAreaReclaim: {
           profile,
+          previousDayRange: state.engine.previousDayRange,
+          entryMode: candidate.entryMode,
+          entryModePolicy: {
+            global: config.VAR_ENTRY_MODE,
+            LONG: config.VAR_ENTRY_MODE_LONG,
+            SHORT: config.VAR_ENTRY_MODE_SHORT,
+          },
+          ...(candidate.acceptedReturn
+            ? { acceptedReturn: candidate.acceptedReturn }
+            : {}),
+          ...(candidate.rsiDoubleTrap
+            ? { rsiDoubleTrap: candidate.rsiDoubleTrap }
+            : {}),
+          ...(candidate.priorDayTrap
+            ? { priorDayTrap: candidate.priorDayTrap }
+            : {}),
           excursionStart: candidate.excursionStart,
           extreme: candidate.extreme,
           atr: candidate.atr,

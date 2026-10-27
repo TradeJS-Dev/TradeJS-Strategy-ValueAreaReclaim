@@ -7,11 +7,12 @@ import {
   type ValueAreaReclaimConfig,
 } from "./config.js";
 import { createValueAreaReclaimCore } from "./core.js";
+import { valueAreaReclaimAiAdapter } from "./ai.js";
 
 const entry: ValidatedStrategyRegistryEntry<ValueAreaReclaimConfig> = {
   defaults: defaultConfig,
   parseConfig,
-  manifest: { name: STRATEGY_NAME },
+  manifest: { name: STRATEGY_NAME, aiAdapter: valueAreaReclaimAiAdapter },
   createCore: createValueAreaReclaimCore,
 };
 export const strategyEntries = defineStrategyPlugin({
@@ -23,3 +24,9 @@ export * from "./profile.js";
 export * from "./engine.js";
 export * from "./core.js";
 export * from "./figures.js";
+export * from "./ai.js";
+export * from "./gate.js";
+
+export type { ClosedCandlesCapability } from "./history.js";
+
+export * from "./rsi.js";

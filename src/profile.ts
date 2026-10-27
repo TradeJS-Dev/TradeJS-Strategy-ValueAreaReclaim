@@ -150,3 +150,36 @@ export function buildValueAreaProfile(
     vah: width === 0 ? high : low + (vahIndex + 1) * width,
   };
 }
+
+/** Exact prior completed UTC-day range from the same bounded15m source window. */
+export interface PreviousDayRange {
+  start: number;
+  end: number;
+  high: number;
+  low: number;
+  volume: number;
+}
+export function buildPreviousDayRange(
+  candles: readonly ProfileCandle[],
+  end: number,
+): PreviousDayRange | null {
+  if (!Number.isSafeInteger(end) || end % UTC_DAY_MS !== 0)
+    throw new Error("Invalid previous UTC-day range boundary");
+  const start = end - UTC_DAY_MS;
+  const rows = candles.filter((c) => c.timestamp >= start && c.timestamp < end);
+  if (rows.length !== 96) return null;
+  let high = -Infinity,
+    low = Infinity,
+    volume = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const c = rows[i];
+    validateCandle(c);
+    if (c.timestamp !== start + i * SOURCE_INTERVAL_MS) return null;
+    high = Math.max(high, c.high);
+    low = Math.min(low, c.low);
+    volume += c.volume;
+  }
+  return high > low && volume > 0 && Number.isFinite(volume)
+    ? { start, end, high, low, volume }
+    : null;
+}

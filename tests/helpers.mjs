@@ -1,14 +1,5 @@
-import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { createStrategyAPI } from "@tradejs/core/strategies";
 
-// Verify the unreleased API through its public export, without package overlays.
-const frameworkRoot =
-  process.env.TRADEJS_FRAMEWORK_REPOSITORY_ROOT ??
-  fileURLToPath(new URL("../../investing/", import.meta.url));
-const { createStrategyAPI } = createRequire(
-  path.join(frameworkRoot, "package.json"),
-)("@tradejs/core/strategies");
 import {
   createValueAreaReclaimCore,
   parseConfig,
@@ -66,7 +57,7 @@ export const longBar = (ts, values = {}) =>
 export const shortBar = (ts, values = {}) =>
   bar(ts, { open: 125.9, low: 125.7, high: 126.2, close: 125.8, ...values });
 
-// Use the current public StrategyAPI; only the connector is replaced at its IO boundary.
+// Published public entry/state builders with a strategy-owned source capability boundary.
 export async function harness({
   overrides = {},
   initial = history(),
@@ -76,6 +67,7 @@ export async function harness({
   env = "BACKTEST",
   sourceError = null,
   runtimeConfig = {},
+  sourceCapability = true,
 } = {}) {
   const cfg = config(overrides);
   const data = [...initial];
@@ -109,6 +101,32 @@ export async function harness({
       return stores.get(key);
     },
   });
+  // Strategy-owned boundary double. Actual host capability is checked separately in Project integration.
+  if (sourceCapability)
+    api.getClosedCandles = async (request) => {
+      reads.push(request);
+      const failure =
+        typeof sourceError === "function" ? sourceError() : sourceError;
+      if (failure) throw failure;
+      const candles = source
+        .filter(
+          (c) => c.timestamp >= request.start && c.timestamp < request.end,
+        )
+        .map((c) => ({
+          ...c,
+          dt: new Date(c.timestamp).toISOString(),
+          turnover: c.close * c.volume,
+        }));
+      return {
+        ...request,
+        asOf: data.at(-1).timestamp + Number(cfg.INTERVAL) * 60000,
+        candles,
+        complete:
+          candles.length === (request.end - request.start) / STEP &&
+          candles.every((c, i) => c.timestamp === request.start + i * STEP),
+        missingRanges: [],
+      };
+    };
   const run = await createValueAreaReclaimCore({
     config: { ...cfg, ...runtimeConfig },
     data,
