@@ -47,6 +47,8 @@ test("1h entries on both sides use exactly the same 15m profile as 15m execution
     const b = await hour.next(row);
     assert.equal(b.kind, "entry");
     assert.equal(b.entryContext.interval, "60");
+    assert.equal(b.signal.figures.lines[0].points.at(-1).timestamp, END + HOUR);
+    assert.equal(a.signal.figures.lines[0].points.at(-1).timestamp, END + STEP);
     assert.deepEqual(
       b.signal.indicators.valueAreaReclaim.profile,
       a.signal.indicators.valueAreaReclaim.profile,

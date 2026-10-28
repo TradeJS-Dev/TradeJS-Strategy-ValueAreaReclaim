@@ -1,10 +1,12 @@
 import type { Signal } from "@tradejs/types";
 import type { ReclaimCandidate } from "./engine.js";
+import { SOURCE_INTERVAL_MS } from "./profile.js";
 
 export function buildFigures(
   candidate: ReclaimCandidate,
   entry: number,
   stop: number,
+  executionStep = SOURCE_INTERVAL_MS,
 ): Signal["figures"] {
   const { profile, timestamp, direction } = candidate;
   const levels = {
@@ -20,8 +22,13 @@ export function buildFigures(
       id: `var-${kind}-${timestamp}`,
       kind: `var_${kind}`,
       points: [
-        { timestamp: profile.end, value },
-        { timestamp, value },
+        {
+          timestamp: ["VAH", "VAL", "POC"].includes(kind)
+            ? profile.end
+            : timestamp,
+          value,
+        },
+        { timestamp: timestamp + executionStep, value },
       ],
       color:
         kind === "stop" ? "#ef4444" : kind === "target" ? "#22c55e" : "#3b82f6",

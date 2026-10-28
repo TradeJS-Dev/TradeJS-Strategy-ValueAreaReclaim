@@ -182,12 +182,15 @@ export const createValueAreaReclaimCore: CreateStrategyCore<
     )
       return strategyApi.skip("VAR_MIN_RR");
     // Count accepted entry decisions, including orders later rejected by host policy.
+    const setupId = `var:${profile.start}:${profile.end}:${direction}:${candidate.excursionStart}`;
     const decision = await strategyApi.entry({
       code: "VAR_RECLAIM_ENTRY",
       direction,
       signalId: `var-${profile.end}-${direction}-${timestamp}`,
-      figures: buildFigures(candidate, currentPrice, stop),
+      figures: buildFigures(candidate, currentPrice, stop, step),
+      additionalIndicators: { setupId },
       indicators: {
+        setupId,
         valueAreaReclaim: {
           profile,
           excursionStart: candidate.excursionStart,
