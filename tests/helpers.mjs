@@ -1,14 +1,4 @@
-import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
-
-// Verify the unreleased API through its public export, without package overlays.
-const frameworkRoot =
-  process.env.TRADEJS_FRAMEWORK_REPOSITORY_ROOT ??
-  fileURLToPath(new URL("../../investing/", import.meta.url));
-const { createStrategyAPI } = createRequire(
-  path.join(frameworkRoot, "package.json"),
-)("@tradejs/core/strategies");
+import { createStrategyAPI } from "@tradejs/core/strategies";
 import {
   createValueAreaReclaimCore,
   parseConfig,

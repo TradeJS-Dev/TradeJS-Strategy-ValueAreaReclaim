@@ -412,16 +412,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tradejs/core@npm:^3.1.28":
-  version: 3.1.28
-  resolution: "@tradejs/core@npm:3.1.28"
+"@tradejs/core@npm:^3.1.29-beta.281":
+  version: 3.1.29-beta.290
+  resolution: "@tradejs/core@npm:3.1.29-beta.290"
   dependencies:
-    "@tradejs/types": "npm:^3.1.28"
+    "@tradejs/types": "npm:^3.1.29-beta.290"
     date-fns: "npm:^3.6.0"
     fast-technical-indicators: "npm:^1.1.4"
     klinecharts: "npm:10.0.0-alpha9"
     lodash: "npm:^4.18.1"
-  checksum: 10c0/4aa626871f92becb3ca2d473211d448bd053303fb5ae7a4733c10da3a753babc86954950376cf3f84cd5b3ddf7ba9542d00bf7c6aee81ded670c321fbb0f9dad
+  checksum: 10c0/d18710564f7135a6a719ca022d1624a2952dfcdbf561f7fe3ecb32614a25a582f8a6c01229aba8dbd9582785cfb4e2092b33670365501c9fb782928b42774fad
   languageName: node
   linkType: hard
 
@@ -439,23 +439,23 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@tradejs/strategy-value-area-reclaim@workspace:."
   dependencies:
-    "@tradejs/core": "npm:^3.1.28"
+    "@tradejs/core": "npm:^3.1.29-beta.281"
     "@tradejs/strategy-kit": "npm:^3.0.6"
-    "@tradejs/types": "npm:^3.1.28"
+    "@tradejs/types": "npm:^3.1.29-beta.281"
     prettier: "npm:3.6.2"
     tsup: "npm:8.5.1"
     typescript: "npm:5.9.2"
   peerDependencies:
-    "@tradejs/core": ^3.1.28
+    "@tradejs/core": ^3.1.29-beta.281
     "@tradejs/strategy-kit": ^3.0.6
-    "@tradejs/types": ^3.1.28
+    "@tradejs/types": ^3.1.29-beta.281
   languageName: unknown
   linkType: soft
 
-"@tradejs/types@npm:^3.1.28":
-  version: 3.1.28
-  resolution: "@tradejs/types@npm:3.1.28"
-  checksum: 10c0/e350c8355e87eff29b05ed5b09a4d68f338bd5f4ee608aa7019ec39c4769a1b3276d871e4cc8ab85bdc21886b75b78169597b0c083cbdfa5b2c55c66d0deceb1
+"@tradejs/types@npm:^3.1.29-beta.281, @tradejs/types@npm:^3.1.29-beta.290":
+  version: 3.1.29-beta.290
+  resolution: "@tradejs/types@npm:3.1.29-beta.290"
+  checksum: 10c0/4d256c45e3b6c35353648f74f319466debbe8bebf19a3391409fc9b4cb9cd7f6349422778f20cfd31c22cb0133c6ecbd972ad6372aad879f13f4067dfdb68c47
   languageName: node
   linkType: hard
 
