@@ -1,6 +1,6 @@
 {
   "name": "@tradejs/strategy-value-area-reclaim",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Causal reclaim of a completed UTC-day OHLCV value area.",
   "type": "module",
   "packageManager": "yarn@4.13.0",
