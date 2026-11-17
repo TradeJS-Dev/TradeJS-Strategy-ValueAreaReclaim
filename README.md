@@ -10,6 +10,18 @@
 Страница источника была недоступна при разработке, поэтому пакет не является
 проверенным переносом Pine Script. Код написан самостоятельно.
 
+## Установка
+
+```bash
+yarn add @tradejs/strategy-value-area-reclaim
+```
+
+Добавьте `"@tradejs/strategy-value-area-reclaim"` в список `strategies`
+файла `tradejs.config.ts`. Для исполнения на `1h` нужна версия TradeJS с
+`StrategyAPI.getClosedCandles`. Совместимая опубликованная сборка
+`@tradejs/core`, `@tradejs/types` и `@tradejs/node` — `3.1.29-beta.302`.
+Используйте одну версию этих пакетов в проекте.
+
 ## История 15m и исполнение 1h
 
 Для `INTERVAL: "15"` ядро восстанавливает ограниченную историю из `data`
